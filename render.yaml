@@ -50,13 +50,12 @@ services:
     rootDir: frontend
     dockerfilePath: ./Dockerfile
     plan: free
-    # NEXT_PUBLIC_API_URL must reach the build — pass it as a Docker build arg.
-    dockerBuildArgs:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     envVars:
       - key: NEXTAUTH_SECRET
         generateValue: true
       - key: NEXTAUTH_URL                 # set to THIS service's public URL after 1st deploy
         sync: false
+      # Render auto-passes env vars as Docker build args, so this reaches the
+      # `ARG NEXT_PUBLIC_API_URL` in the Dockerfile and is baked into the build.
       - key: NEXT_PUBLIC_API_URL          # set to the backend's public URL, then redeploy
         sync: false
