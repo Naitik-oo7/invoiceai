@@ -112,7 +112,12 @@ export function InvoiceTable({
                   <Progress value={(inv.overall_confidence || 0) * 100} className="h-2" />
                 </td>
                 <td className="px-4 py-3">
-                  {inv.pdf_type === "digital" ? <FileText className="h-4 w-4" /> : <Image className="h-4 w-4" />}
+                  {inv.pdf_type === "digital" ? (
+                    <FileText className="h-4 w-4 text-muted-foreground" aria-label="Digital PDF" />
+                  ) : (
+                    /* eslint-disable-next-line jsx-a11y/alt-text */
+                    <Image className="h-4 w-4 text-muted-foreground" aria-label="Scanned image PDF" />
+                  )}
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">{formatRelativeTime(inv.created_at)}</td>
                 <td className="px-4 py-3">
