@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LLMProvider = Literal["openai", "gemini"]
@@ -36,6 +37,19 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 10
     ACCESS_TOKEN_EXPIRE_HOURS: int = 24
     ALGORITHM: str = "HS256"
+
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def _ensure_asyncpg_driver(cls, v: str) -> str:
+        # Managed Postgres providers (Render, Railway, Heroku, etc.) hand out a
+        # plain "postgres://" / "postgresql://" URL. SQLAlchemy's async engine
+        # needs the asyncpg driver, so normalize the scheme here.
+        if v.startswith("postgres://"):
+            return "postgresql+asyncpg://" + v[len("postgres://"):]
+        if v.startswith("postgresql://"):
+            return "postgresql+asyncpg://" + v[len("postgresql://"):]
+        return v
 
 
 settings = Settings()

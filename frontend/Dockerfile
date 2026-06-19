@@ -10,6 +10,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# NEXT_PUBLIC_* vars are inlined into the client bundle at build time, so the
+# public backend URL must be present here (passed as a build arg by the host).
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm run build
 
 FROM base AS runner

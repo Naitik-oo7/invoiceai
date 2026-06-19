@@ -1,0 +1,62 @@
+# Render Blueprint — deploys the whole InvoiceAI stack.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Deploy: push to GitHub, then Render Dashboard -> New -> Blueprint -> pick this repo.
+# After the FIRST deploy, set the two cross-service URLs noted below and redeploy.
+
+databases:
+  - name: invoiceai-db
+    plan: free               # free Postgres expires after 90 days; upgrade for permanence
+    databaseName: invoiceai
+    user: invoiceai
+
+services:
+  # ---------------- Backend (FastAPI) ----------------
+  - type: web
+    name: invoiceai-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    # Run migrations on boot, then serve on Render's injected $PORT.
+    dockerCommand: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL                 # config.py normalizes the scheme to asyncpg
+        fromDatabase:
+          name: invoiceai-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true               # Render generates a strong value
+      - key: ENVIRONMENT
+        value: production
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false                       # paste a FRESH key in the dashboard
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: MAX_UPLOAD_MB
+        value: "10"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "10"
+      - key: FRONTEND_URL                 # set to the frontend URL after 1st deploy
+        sync: false
+
+  # ---------------- Frontend (Next.js) ----------------
+  - type: web
+    name: invoiceai-frontend
+    runtime: docker
+    rootDir: frontend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    # NEXT_PUBLIC_API_URL must reach the build — pass it as a Docker build arg.
+    dockerBuildArgs:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    envVars:
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: NEXTAUTH_URL                 # set to THIS service's public URL after 1st deploy
+        sync: false
+      - key: NEXT_PUBLIC_API_URL          # set to the backend's public URL, then redeploy
+        sync: false
