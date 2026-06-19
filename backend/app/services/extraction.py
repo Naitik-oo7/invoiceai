@@ -4,10 +4,9 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-from openai import AsyncOpenAI
 from pydantic import ValidationError
 
-from app.core.config import settings
+from app.services.llm import calculate_cost, complete_text, complete_vision
 from app.services.pdf import PDFProcessingResult
 from app.services.validation import (
     ValidatedExtraction,
@@ -118,16 +117,6 @@ class ExtractionResult:
     raw_data: dict[str, Any] = field(default_factory=dict)
 
 
-def calculate_cost(_method: str, tokens_in: int, tokens_out: int) -> float:
-    cost_in = (tokens_in / 1_000_000) * 2.50
-    cost_out = (tokens_out / 1_000_000) * 10.00
-    return round(cost_in + cost_out, 4)
-
-
-def _get_client() -> AsyncOpenAI:
-    return AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-
-
 async def _extract_from_text(
     text_content: str,
     filename: str,
@@ -137,22 +126,12 @@ async def _extract_from_text(
     if corrective_note:
         user_message += f"\n\nCORRECTION REQUIRED: Previous response was invalid. Error: {corrective_note}. Return valid JSON only."
 
-    client = _get_client()
-    response = await client.chat.completions.create(
-        model="gpt-4o",
-        temperature=0,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_message},
-        ],
-    )
-    content = response.choices[0].message.content or "{}"
-    raw_data = json.loads(content)
+    response = await complete_text(SYSTEM_PROMPT, user_message)
+    raw_data = json.loads(response.content)
     return RawExtractionResult(
         raw_data=raw_data,
-        tokens_in=response.usage.prompt_tokens if response.usage else 0,
-        tokens_out=response.usage.completion_tokens if response.usage else 0,
+        tokens_in=response.tokens_in,
+        tokens_out=response.tokens_out,
     )
 
 
@@ -161,37 +140,17 @@ async def _extract_from_vision(
     filename: str,
     corrective_note: str | None = None,
 ) -> RawExtractionResult:
-    content: list[dict[str, Any]] = [
-        {
-            "type": "text",
-            "text": f"Extract invoice data from these document page images.\nFilename: {filename}"
-            + (f"\n\nCORRECTION REQUIRED: {corrective_note}" if corrective_note else ""),
-        }
-    ]
-    for img_b64 in page_images:
-        content.append(
-            {
-                "type": "image_url",
-                "image_url": {"url": f"data:image/jpeg;base64,{img_b64}", "detail": "high"},
-            }
-        )
-
-    client = _get_client()
-    response = await client.chat.completions.create(
-        model="gpt-4o",
-        temperature=0,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": content},
-        ],
+    user_text = (
+        f"Extract invoice data from these document page images.\nFilename: {filename}"
+        + (f"\n\nCORRECTION REQUIRED: {corrective_note}" if corrective_note else "")
     )
-    raw_content = response.choices[0].message.content or "{}"
-    raw_data = json.loads(raw_content)
+
+    response = await complete_vision(SYSTEM_PROMPT, user_text, page_images)
+    raw_data = json.loads(response.content)
     return RawExtractionResult(
         raw_data=raw_data,
-        tokens_in=response.usage.prompt_tokens if response.usage else 0,
-        tokens_out=response.usage.completion_tokens if response.usage else 0,
+        tokens_in=response.tokens_in,
+        tokens_out=response.tokens_out,
     )
 
 
@@ -236,7 +195,7 @@ async def extract_invoice_fields(
     field_warnings = generate_field_warnings(validated)
     warnings = {**field_warnings, **sanity_warnings}
     duration_ms = int((time.time() - start_time) * 1000)
-    cost = calculate_cost(method, total_tokens_in, total_tokens_out)
+    cost = calculate_cost(total_tokens_in, total_tokens_out)
 
     logger.info(
         "Extraction complete invoice_id=%s method=%s attempts=%s tokens_in=%s tokens_out=%s cost=%s duration_ms=%s success=true",

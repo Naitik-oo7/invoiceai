@@ -1,6 +1,6 @@
 # InvoiceAI
 
-AI-powered invoice data extraction with human review. Upload PDF invoices, extract structured fields using GPT-4o, review with confidence scoring, and save to PostgreSQL.
+AI-powered invoice data extraction with human review. Upload PDF invoices, extract structured fields using OpenAI or Google Gemini, review with confidence scoring, and save to PostgreSQL.
 
 ## Key Features
 
@@ -30,7 +30,7 @@ flowchart TB
     Upload -->|PDF bytes| backend
     PDF -->|digital text| Extract
     PDF -->|scanned images| Extract
-    Extract --> OpenAI[GPT-4o]
+    Extract --> LLM[OpenAI or Gemini]
     backend --> PG[(PostgreSQL 16)]
 ```
 
@@ -46,7 +46,8 @@ flowchart TB
 
 ```bash
 cp .env.example .env
-# Fill in OPENAI_API_KEY, POSTGRES_PASSWORD, SECRET_KEY, NEXTAUTH_SECRET
+# Fill in POSTGRES_PASSWORD, SECRET_KEY, NEXTAUTH_SECRET
+# Set LLM_PROVIDER=openai + OPENAI_API_KEY, or LLM_PROVIDER=gemini + GEMINI_API_KEY
 
 docker-compose up --build
 ```
@@ -78,19 +79,32 @@ docker-compose up --build
 ## Running Tests
 
 ```bash
-# Backend unit + integration (mocked OpenAI)
+# Backend unit + integration (mocked LLM)
 cd backend && pip install -r requirements.txt && pytest tests/unit tests/integration -v
 
 # Frontend
 cd frontend && npm install && npm test
 
-# Accuracy suite (local only, requires OPENAI_API_KEY)
+# Accuracy suite (local only, requires OPENAI_API_KEY or GEMINI_API_KEY)
 cd backend && pytest tests/accuracy/ -v -m accuracy
 ```
 
+## LLM Provider
+
+Set `LLM_PROVIDER` in `.env` to choose the extraction backend:
+
+| Provider | Env vars | Default model |
+|----------|----------|---------------|
+| `openai` (default) | `OPENAI_API_KEY` | `gpt-4o` |
+| `gemini` | `GEMINI_API_KEY` | `gemini-2.0-flash` |
+
+Optional overrides: `OPENAI_MODEL`, `GEMINI_MODEL`.
+
+Get a free Gemini API key at [Google AI Studio](https://aistudio.google.com/apikey).
+
 ## Cost Transparency
 
-GPT-4o pricing (approximate):
+OpenAI GPT-4o pricing (approximate):
 - Input: $2.50 / 1M tokens
 - Output: $10.00 / 1M tokens
 
@@ -98,6 +112,8 @@ Typical costs:
 - Digital PDF: ~$0.002 per invoice
 - Scanned PDF (1 page): ~$0.015
 - Scanned PDF (3 pages max): ~$0.045
+
+Gemini 2.0 Flash is significantly cheaper and has a generous free tier.
 
 ## Limitations
 
@@ -113,6 +129,6 @@ Typical costs:
 - **Frontend**: Next.js 15, TypeScript, Tailwind CSS, shadcn/ui, NextAuth v5
 - **Backend**: FastAPI, SQLAlchemy 2.0 (async), Alembic, Pydantic v2
 - **Database**: PostgreSQL 16
-- **AI**: OpenAI GPT-4o (text + vision)
+- **AI**: OpenAI GPT-4o or Google Gemini (configurable via `LLM_PROVIDER`)
 - **PDF**: pdfplumber + pdf2image (poppler)
 - **Deploy**: Docker Compose (3 services)

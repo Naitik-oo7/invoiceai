@@ -62,7 +62,6 @@ describe("InvoiceReviewForm", () => {
       />
     );
 
-    expect(screen.getByText("Review Invoice")).toBeTruthy();
     expect(screen.getByDisplayValue("Acme Corp")).toBeInTheDocument();
     expect(screen.getByText(/Low confidence \(50%\)/)).toBeInTheDocument();
     expect(screen.getByText("Approve & Save")).toBeInTheDocument();

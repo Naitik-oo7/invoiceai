@@ -82,10 +82,14 @@ _ensure_fixtures()
 @pytest.mark.accuracy
 @pytest.mark.asyncio
 async def test_acme_invoice_001():
-    """Accuracy test against real GPT-4o — run locally only."""
+    """Accuracy test against the configured LLM provider — run locally only."""
     import os
 
-    if not os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY", "").startswith("sk-test"):
+    provider = os.getenv("LLM_PROVIDER", "openai")
+    if provider == "gemini":
+        if not os.getenv("GEMINI_API_KEY"):
+            pytest.skip("GEMINI_API_KEY not configured for accuracy tests")
+    elif not os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY", "").startswith("sk-test"):
         pytest.skip("OPENAI_API_KEY not configured for accuracy tests")
 
     pdf_path = FIXTURES_DIR / "acme_invoice_001.pdf"

@@ -1,6 +1,6 @@
 # Adding Invoices to the Accuracy Suite
 
-The accuracy suite validates extraction quality against real PDFs with known expected values. It calls the real GPT-4o API and is intended for **local runs only** (not CI).
+The accuracy suite validates extraction quality against real PDFs with known expected values. It calls the configured LLM API and is intended for **local runs only** (not CI).
 
 ## Directory Structure
 
@@ -48,6 +48,8 @@ tests/accuracy/fixtures/
 ```bash
 cd backend
 OPENAI_API_KEY=sk-your-key pytest tests/accuracy/ -v -m accuracy --tb=short
+# Or with Gemini:
+LLM_PROVIDER=gemini GEMINI_API_KEY=your-key pytest tests/accuracy/ -v -m accuracy --tb=short
 ```
 
 ## Tips

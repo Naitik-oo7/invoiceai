@@ -1,21 +1,21 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.services.extraction import calculate_cost, extract_invoice_fields
+from app.services.extraction import extract_invoice_fields
+from app.services.llm import LLMResponse, calculate_cost
 from app.services.pdf import PDFProcessingResult
 
 
 def test_calculate_cost():
-    cost = calculate_cost("text", 1000, 500)
+    cost = calculate_cost(1000, 500)
     assert cost == round((1000 / 1_000_000) * 2.50 + (500 / 1_000_000) * 10.00, 4)
 
 
 @pytest.mark.asyncio
 async def test_extract_from_text_success():
-    mock_response = MagicMock()
-    mock_response.choices = [MagicMock()]
-    mock_response.choices[0].message.content = """{
+    llm_response = LLMResponse(
+        content="""{
         "invoice_number": "INV-001",
         "vendor_name": "Acme Corp",
         "invoice_date": "2025-01-15",
@@ -34,8 +34,10 @@ async def test_extract_from_text_success():
         },
         "overall_confidence": 0.90,
         "extraction_notes": "Clear document."
-    }"""
-    mock_response.usage = MagicMock(prompt_tokens=500, completion_tokens=200)
+    }""",
+        tokens_in=500,
+        tokens_out=200,
+    )
 
     pdf_result = PDFProcessingResult(
         pdf_type="digital",
@@ -45,8 +47,8 @@ async def test_extract_from_text_success():
         file_hash="abc123",
     )
 
-    with patch("app.services.extraction._get_client") as mock_client:
-        mock_client.return_value.chat.completions.create = AsyncMock(return_value=mock_response)
+    with patch("app.services.extraction.complete_text", new_callable=AsyncMock) as mock_complete:
+        mock_complete.return_value = llm_response
         result = await extract_invoice_fields(pdf_result, "test.pdf")
 
     assert result.fields.invoice_number == "INV-001"
@@ -57,14 +59,14 @@ async def test_extract_from_text_success():
 
 @pytest.mark.asyncio
 async def test_extract_retry_on_validation_failure():
-    bad_response = MagicMock()
-    bad_response.choices = [MagicMock()]
-    bad_response.choices[0].message.content = '{"invoice_number": "X", "confidence": {"invoice_number": 2.0}}'
-    bad_response.usage = MagicMock(prompt_tokens=100, completion_tokens=50)
+    bad_response = LLMResponse(
+        content='{"invoice_number": "X", "confidence": {"invoice_number": 2.0}}',
+        tokens_in=100,
+        tokens_out=50,
+    )
 
-    good_response = MagicMock()
-    good_response.choices = [MagicMock()]
-    good_response.choices[0].message.content = """{
+    good_response = LLMResponse(
+        content="""{
         "invoice_number": "INV-002",
         "vendor_name": "Beta Inc",
         "invoice_date": "2025-03-01",
@@ -83,8 +85,10 @@ async def test_extract_retry_on_validation_failure():
         },
         "overall_confidence": 0.85,
         "extraction_notes": "Retried successfully."
-    }"""
-    good_response.usage = MagicMock(prompt_tokens=200, completion_tokens=100)
+    }""",
+        tokens_in=200,
+        tokens_out=100,
+    )
 
     pdf_result = PDFProcessingResult(
         pdf_type="digital",
@@ -94,10 +98,8 @@ async def test_extract_retry_on_validation_failure():
         file_hash="def456",
     )
 
-    with patch("app.services.extraction._get_client") as mock_client:
-        mock_client.return_value.chat.completions.create = AsyncMock(
-            side_effect=[bad_response, good_response]
-        )
+    with patch("app.services.extraction.complete_text", new_callable=AsyncMock) as mock_complete:
+        mock_complete.side_effect = [bad_response, good_response]
         result = await extract_invoice_fields(pdf_result, "test.pdf")
 
     assert result.attempts == 2

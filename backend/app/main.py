@@ -7,7 +7,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.api import auth, export, invoices, stats
-from app.core.config import settings
+from app.core.config import get_cors_origins, settings
+from app.services.llm import is_configured as llm_configured
 from app.core.exceptions import AppException
 from app.db.session import engine
 
@@ -15,13 +16,26 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="InvoiceAI API", version="1.0.0")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+def configure_cors(app: FastAPI) -> None:
+    if settings.ENVIRONMENT == "development":
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    else:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=get_cors_origins(),
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
+
+configure_cors(app)
 
 
 @app.exception_handler(AppException)
@@ -61,6 +75,7 @@ async def health_check() -> dict:
     return {
         "status": "healthy" if db_ok else "degraded",
         "database": "ok" if db_ok else "error",
-        "openai_configured": bool(settings.OPENAI_API_KEY),
+        "llm_provider": settings.LLM_PROVIDER,
+        "llm_configured": llm_configured(),
         "timestamp": datetime.now(UTC).isoformat(),
     }
