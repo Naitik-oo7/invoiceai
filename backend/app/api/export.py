@@ -1,6 +1,6 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,16 +12,29 @@ from app.services.export import fetch_invoices_for_export, generate_csv, generat
 router = APIRouter()
 
 
+def _parse_optional_date(value: str | None) -> date | None:
+    """Parse an ISO date query param, treating empty strings as absent."""
+    if not value:
+        return None
+    return date.fromisoformat(value)
+
+
 @router.get("/csv")
 async def export_csv(
     status: str | None = None,
-    date_from: date | None = None,
-    date_to: date | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
     search: str | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Response:
-    invoices = await fetch_invoices_for_export(db, status, date_from, date_to, search)
+    invoices = await fetch_invoices_for_export(
+        db,
+        status,
+        _parse_optional_date(date_from),
+        _parse_optional_date(date_to),
+        search,
+    )
     content = generate_csv(invoices)
     return Response(
         content=content,
@@ -33,13 +46,19 @@ async def export_csv(
 @router.get("/excel")
 async def export_excel(
     status: str | None = None,
-    date_from: date | None = None,
-    date_to: date | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
     search: str | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Response:
-    invoices = await fetch_invoices_for_export(db, status, date_from, date_to, search)
+    invoices = await fetch_invoices_for_export(
+        db,
+        status,
+        _parse_optional_date(date_from),
+        _parse_optional_date(date_to),
+        search,
+    )
     content = generate_excel(invoices)
     return Response(
         content=content,

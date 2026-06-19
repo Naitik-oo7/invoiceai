@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o"
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.0-flash"
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     FRONTEND_URL: str = "http://localhost:3000"
     CORS_ORIGINS: str = (
         "http://localhost:3000,http://localhost:3001,http://localhost:3002,"
