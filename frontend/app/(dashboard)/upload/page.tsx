@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { Loader2, Sparkles } from "lucide-react";
 import { UploadZone } from "@/components/UploadZone";
 import { DuplicateWarningDialog } from "@/components/DuplicateWarningDialog";
+import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { api } from "@/lib/api";
@@ -79,7 +81,11 @@ export default function UploadPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="mb-6 text-2xl font-bold">Upload Invoice</h1>
+      <PageHeader
+        eyebrow="New extraction"
+        title="Upload Invoice"
+        description="Drop a PDF invoice and let InvoiceAI read, validate and score every field for you."
+      />
 
       <UploadZone
         onFileSelect={handleFileSelect}
@@ -88,17 +94,26 @@ export default function UploadPage() {
       />
 
       {uploading && (
-        <div className="mt-4 space-y-2">
-          <Progress value={progress} />
-          <p className="text-sm text-muted-foreground text-center">{message}</p>
+        <div className="mt-5 space-y-2 rounded-lg border bg-card p-4 shadow-card">
+          <Progress value={progress} className="h-2" />
+          <p className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+            {message}
+          </p>
         </div>
       )}
 
       <Button
-        className="mt-4 w-full"
+        size="lg"
+        className="mt-5 w-full"
         disabled={!selectedFile || uploading}
         onClick={handleUpload}
       >
+        {uploading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Sparkles className="h-4 w-4" />
+        )}
         Extract Invoice Data
       </Button>
 

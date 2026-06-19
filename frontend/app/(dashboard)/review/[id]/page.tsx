@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/PageHeader";
 import { InvoiceReviewForm } from "@/components/InvoiceReviewForm";
 import { api } from "@/lib/api";
 import { useUploadStore } from "@/lib/upload-store";
@@ -39,7 +40,11 @@ export default function ReviewPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Review Invoice</h1>
+      <PageHeader
+        eyebrow="Review & approve"
+        title="Review Invoice"
+        description="Verify the extracted fields, fix anything flagged, then approve."
+      />
       <InvoiceReviewForm
         invoice={invoice}
         pdfUrl={objectUrl}

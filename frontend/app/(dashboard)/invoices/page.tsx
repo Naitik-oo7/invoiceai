@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/PageHeader";
 import { SearchFilters } from "@/components/SearchFilters";
 import { InvoiceTable } from "@/components/InvoiceTable";
 import { api } from "@/lib/api";
@@ -85,18 +86,23 @@ function InvoicesContent() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Invoices</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => handleExport("csv")}>
-            <Download className="mr-1 h-4 w-4" /> CSV
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => handleExport("excel")}>
-            <Download className="mr-1 h-4 w-4" /> Excel
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow="Library"
+        title="Invoices"
+        description="Search, filter and export every invoice your team has processed."
+        className="mb-0"
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={() => handleExport("csv")}>
+              <Download className="h-4 w-4" /> CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => handleExport("excel")}>
+              <Download className="h-4 w-4" /> Excel
+            </Button>
+          </>
+        }
+      />
 
       <SearchFilters onChange={(f) => { setFilters(f); setPage(1); }} />
 

@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
+import { Upload } from "lucide-react";
 import { DashboardStats } from "@/components/DashboardStats";
+import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import type { StatsResponse } from "@/types";
 
@@ -17,9 +21,23 @@ export default function DashboardPage() {
     api.getStats(token).then(setStats).finally(() => setLoading(false));
   }, [session]);
 
+  const firstName = session?.user?.name?.split(" ")[0];
+
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Dashboard</h1>
+      <PageHeader
+        eyebrow="Overview"
+        title={firstName ? `Welcome back, ${firstName}` : "Dashboard"}
+        description="A live snapshot of your invoice pipeline — extractions, reviews and spend."
+        actions={
+          <Button asChild>
+            <Link href="/upload">
+              <Upload className="h-4 w-4" />
+              Upload invoice
+            </Link>
+          </Button>
+        }
+      />
       <DashboardStats stats={stats} loading={loading} />
     </div>
   );

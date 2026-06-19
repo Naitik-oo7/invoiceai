@@ -4,24 +4,53 @@
 
 @layer base {
   :root {
+    /* Surfaces */
     --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --primary: 239 84% 67%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
+    --card-foreground: 222 47% 11%;
+
+    /* Brand — azure primary on a navy ink foundation */
+    --primary: 201 96% 32%;
+    --primary-foreground: 0 0% 100%;
+    --brand-ink: 222 47% 11%;
+    --brand-azure: 201 96% 32%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 201 90% 95%;
+    --accent-foreground: 201 96% 24%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 201 96% 32%;
+    --radius: 0.7rem;
+  }
+
+  .dark {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
+    --card: 222 44% 10%;
+    --card-foreground: 210 40% 98%;
+    --primary: 201 90% 52%;
+    --primary-foreground: 222 47% 7%;
+    --brand-ink: 210 40% 98%;
+    --brand-azure: 201 90% 52%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 63% 50%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 239 84% 67%;
-    --radius: 0.5rem;
+    --border: 217 33% 20%;
+    --input: 217 33% 22%;
+    --ring: 201 90% 52%;
   }
 }
 
@@ -31,5 +60,32 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background-color: hsl(var(--primary) / 0.18);
+    color: hsl(var(--brand-ink));
+  }
+  /* Tabular, mono figures for monetary + numeric data */
+  .tnum {
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* Subtle paper grid used behind brand surfaces */
+  .brand-grid {
+    background-image:
+      linear-gradient(hsl(var(--primary-foreground) / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--primary-foreground) / 0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  .brand-ink-panel {
+    background:
+      radial-gradient(120% 120% at 0% 0%, hsl(201 96% 24%) 0%, transparent 55%),
+      linear-gradient(160deg, hsl(222 47% 14%) 0%, hsl(222 47% 9%) 100%);
   }
 }
