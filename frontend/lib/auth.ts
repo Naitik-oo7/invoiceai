@@ -3,6 +3,9 @@ import Credentials from "next-auth/providers/credentials";
 import { api } from "./api";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  // Behind a proxy (Render/Railway/etc.) Auth.js can't auto-detect the host the
+  // way it does on Vercel, so trust the configured host explicitly.
+  trustHost: true,
   providers: [
     Credentials({
       name: "credentials",
