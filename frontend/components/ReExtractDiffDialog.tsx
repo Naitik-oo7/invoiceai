@@ -9,6 +9,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import type { ReExtractResponse } from "@/types";
 
 const FIELD_LABELS: Record<string, string> = {
@@ -48,48 +50,82 @@ export function ReExtractDiffDialog({
 
   if (!data) return null;
 
-  const formatVal = (v: unknown) => (v === null || v === undefined ? "—" : String(v));
+  const formatVal = (v: unknown) => (v === null || v === undefined || v === "" ? "—" : String(v));
+  const changedCount = Object.values(data.diff).filter((d) => d.changed).length;
+
+  const Option = ({
+    field,
+    kind,
+    value,
+  }: {
+    field: string;
+    kind: "current" | "ai";
+    value: unknown;
+  }) => {
+    const selected = choices[field] === kind;
+    return (
+      <label
+        className={cn(
+          "flex cursor-pointer items-start gap-2.5 rounded-md border p-2.5 transition-colors",
+          selected
+            ? "border-primary bg-accent ring-1 ring-primary/30"
+            : "border-input hover:border-primary/40 hover:bg-muted/40"
+        )}
+      >
+        <input
+          type="radio"
+          name={field}
+          className="mt-0.5 accent-primary"
+          checked={selected}
+          onChange={() => setChoices((c) => ({ ...c, [field]: kind }))}
+        />
+        <span className="min-w-0">
+          <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {kind === "current" ? "Current" : "AI re-extracted"}
+          </span>
+          <span className="block break-words text-sm font-medium text-foreground tnum">
+            {formatVal(value)}
+          </span>
+        </span>
+      </label>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Re-extraction Results</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-2 text-xs font-medium text-muted-foreground">
-            <span>Field</span>
-            <span>Current</span>
-            <span>AI Re-extracted</span>
-            <span>Choose</span>
-          </div>
+        <p className="text-sm text-muted-foreground">
+          {changedCount > 0
+            ? `${changedCount} field${changedCount === 1 ? "" : "s"} changed. Pick which value to keep for each field.`
+            : "No fields changed in the new extraction."}
+        </p>
+        <div className="space-y-3">
           {Object.entries(data.diff).map(([field, d]) => (
             <div
               key={field}
-              className={`grid grid-cols-4 gap-2 items-center text-sm ${d.changed ? "bg-amber-50 rounded p-2" : ""}`}
+              className={cn(
+                "rounded-lg border p-3",
+                d.changed ? "border-amber-200 bg-amber-50/60" : "bg-card"
+              )}
             >
-              <span className="font-medium">{FIELD_LABELS[field] || field}</span>
-              <span>{formatVal(d.current)}</span>
-              <span>{formatVal(d.ai)}</span>
-              <div className="flex gap-2">
-                <label className="flex items-center gap-1 text-xs">
-                  <input
-                    type="radio"
-                    name={field}
-                    checked={choices[field] === "current"}
-                    onChange={() => setChoices((c) => ({ ...c, [field]: "current" }))}
-                  />
-                  Current
-                </label>
-                <label className="flex items-center gap-1 text-xs">
-                  <input
-                    type="radio"
-                    name={field}
-                    checked={choices[field] === "ai"}
-                    onChange={() => setChoices((c) => ({ ...c, [field]: "ai" }))}
-                  />
-                  AI
-                </label>
+              <div className="mb-2.5 flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-foreground">
+                  {FIELD_LABELS[field] || field}
+                </span>
+                {d.changed ? (
+                  <Badge variant="outline" className="border-amber-200 bg-amber-100 text-amber-800">
+                    Changed
+                  </Badge>
+                ) : (
+                  <span className="text-xs text-muted-foreground">No change</span>
+                )}
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Option field={field} kind="current" value={d.current} />
+                <Option field={field} kind="ai" value={d.ai} />
               </div>
             </div>
           ))}

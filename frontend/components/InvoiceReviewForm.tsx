@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { FileWarning, RefreshCw } from "lucide-react";
+import { FileWarning, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -138,20 +138,20 @@ export function InvoiceReviewForm({ invoice, pdfUrl, token, onSaved }: InvoiceRe
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-5">
-      <div className="lg:col-span-2">
-        <Card className="h-full">
+    <div className="grid items-start gap-6 lg:grid-cols-5">
+      <div className="lg:col-span-2 lg:sticky lg:top-20 lg:self-start">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Original Document</CardTitle>
+            <CardTitle className="text-lg text-brand-ink">Original Document</CardTitle>
           </CardHeader>
           <CardContent>
             {pdfUrl ? (
-              <iframe src={pdfUrl} className="h-[600px] w-full rounded border" title="PDF Preview" />
+              <iframe src={pdfUrl} className="h-[480px] w-full rounded-md border lg:h-[600px]" title="PDF Preview" />
             ) : (
-              <div className="flex h-[300px] flex-col items-center justify-center rounded border border-dashed bg-slate-50 p-6 text-center">
+              <div className="flex h-[300px] flex-col items-center justify-center rounded-md border border-dashed bg-muted/40 p-6 text-center">
                 <FileWarning className="mb-3 h-10 w-10 text-muted-foreground" />
-                <p className="font-medium">PDF not retained</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">PDF not retained</p>
+                <p className="mt-1 text-sm text-muted-foreground">
                   Original file no longer available. The review form still works without preview.
                 </p>
               </div>
@@ -164,8 +164,13 @@ export function InvoiceReviewForm({ invoice, pdfUrl, token, onSaved }: InvoiceRe
         <Card>
           <CardContent className="pt-6 space-y-4">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{invoice.original_filename}</Badge>
-              <Badge className={invoice.pdf_type === "digital" ? "bg-blue-50 text-blue-700" : "bg-purple-50 text-purple-700"}>
+              <Badge variant="outline" className="max-w-[14rem] truncate">{invoice.original_filename}</Badge>
+              <Badge
+                variant="outline"
+                className={invoice.pdf_type === "digital"
+                  ? "border-sky-200 bg-sky-50 text-sky-700"
+                  : "border-purple-200 bg-purple-50 text-purple-700"}
+              >
                 {invoice.pdf_type === "digital" ? "Digital PDF" : "Scanned PDF"}
               </Badge>
               <Badge variant="outline">{invoice.extraction_method === "text" ? "Text extraction" : "Vision extraction"}</Badge>
@@ -200,23 +205,24 @@ export function InvoiceReviewForm({ invoice, pdfUrl, token, onSaved }: InvoiceRe
             const value = form.watch(key);
 
             return (
-              <div key={key} className="space-y-2 rounded-lg border border-slate-200 bg-white p-4">
-                <div className="flex items-center justify-between">
+              <div key={key} className="space-y-2 rounded-lg border bg-card p-4 shadow-card">
+                <div className="flex items-center justify-between gap-2">
                   <Label htmlFor={key}>{label}</Label>
                   <FieldConfidenceBadge confidence={confidence} value={value} />
                 </div>
                 <Input id={key} type={type} step={type === "number" ? "0.01" : undefined} {...form.register(key)} />
                 {warning && <FieldWarningBanner message={warning} />}
                 {form.formState.errors[key] && (
-                  <p className="text-sm text-red-600">{form.formState.errors[key]?.message}</p>
+                  <p className="text-sm text-destructive">{form.formState.errors[key]?.message}</p>
                 )}
               </div>
             );
           })}
         </form>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap gap-2 border-t bg-background/90 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:mx-0 sm:rounded-lg sm:border sm:px-4 sm:shadow-card">
           <Button variant="success" onClick={handleApprove} disabled={saving}>
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Approve & Save
           </Button>
           <Button variant="secondary" onClick={() => save("review_pending")} disabled={saving}>
@@ -225,8 +231,8 @@ export function InvoiceReviewForm({ invoice, pdfUrl, token, onSaved }: InvoiceRe
           <Button variant="outline" onClick={() => setShowRejectDialog(true)} disabled={saving}>
             Reject
           </Button>
-          <Button variant="outline" onClick={handleReExtract} disabled={saving}>
-            <RefreshCw className="mr-1 h-4 w-4" /> Re-extract
+          <Button variant="outline" onClick={handleReExtract} disabled={saving} className="sm:ml-auto">
+            <RefreshCw className="h-4 w-4" /> Re-extract
           </Button>
         </div>
       </div>
@@ -253,13 +259,17 @@ export function InvoiceReviewForm({ invoice, pdfUrl, token, onSaved }: InvoiceRe
           <DialogHeader>
             <DialogTitle>Reject Invoice</DialogTitle>
           </DialogHeader>
-          <textarea
-            className="w-full rounded-md border p-2 text-sm"
-            rows={3}
-            placeholder="Rejection reason..."
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-          />
+          <div className="space-y-1.5">
+            <Label htmlFor="reject-reason">Reason for rejection</Label>
+            <textarea
+              id="reject-reason"
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background transition-colors placeholder:text-muted-foreground hover:border-primary/40 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+              rows={3}
+              placeholder="Let your team know why this invoice was rejected…"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+            />
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowRejectDialog(false)}>Cancel</Button>
             <Button variant="destructive" onClick={async () => {

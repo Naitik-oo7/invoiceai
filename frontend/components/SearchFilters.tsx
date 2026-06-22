@@ -25,6 +25,8 @@ export function SearchFilters({ onChange }: SearchFiltersProps) {
   const [dateFrom, setDateFrom] = useState(searchParams.get("date_from") || "");
   const [dateTo, setDateTo] = useState(searchParams.get("date_to") || "");
 
+  const hasActiveFilters = Boolean(search || status || dateFrom || dateTo);
+
   const applyFilters = useCallback(
     (overrides: Record<string, string> = {}) => {
       const filters = {
@@ -56,19 +58,20 @@ export function SearchFilters({ onChange }: SearchFiltersProps) {
   };
 
   return (
-    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 rounded-lg border bg-white p-4 shadow-sm">
-      <div className="relative flex-1 min-w-[200px]">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-card sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="relative min-w-[200px] flex-1">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           className="pl-9"
           placeholder="Search vendor or invoice #..."
+          aria-label="Search invoices"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
       <Select value={status || "all"} onValueChange={(v) => { const s = v === "all" ? "" : v; setStatus(s); applyFilters({ status: s }); }}>
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="h-11 w-full sm:w-[170px]" aria-label="Filter by status">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>
@@ -80,10 +83,31 @@ export function SearchFilters({ onChange }: SearchFiltersProps) {
         </SelectContent>
       </Select>
 
-      <Input type="date" className="w-[150px]" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); applyFilters({ date_from: e.target.value }); }} />
-      <Input type="date" className="w-[150px]" value={dateTo} onChange={(e) => { setDateTo(e.target.value); applyFilters({ date_to: e.target.value }); }} />
+      <div className="flex items-center gap-2">
+        <Input
+          type="date"
+          className="w-full sm:w-[150px]"
+          aria-label="From date"
+          value={dateFrom}
+          onChange={(e) => { setDateFrom(e.target.value); applyFilters({ date_from: e.target.value }); }}
+        />
+        <span className="text-sm text-muted-foreground">–</span>
+        <Input
+          type="date"
+          className="w-full sm:w-[150px]"
+          aria-label="To date"
+          value={dateTo}
+          onChange={(e) => { setDateTo(e.target.value); applyFilters({ date_to: e.target.value }); }}
+        />
+      </div>
 
-      <Button variant="ghost" size="sm" onClick={clearFilters}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={clearFilters}
+        disabled={!hasActiveFilters}
+        className="sm:ml-auto"
+      >
         <X className="mr-1 h-4 w-4" /> Clear
       </Button>
     </div>

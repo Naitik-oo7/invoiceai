@@ -5,9 +5,11 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/PageHeader";
 import { SearchFilters } from "@/components/SearchFilters";
 import { InvoiceTable } from "@/components/InvoiceTable";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { api } from "@/lib/api";
 import type { Invoice } from "@/types";
 
@@ -22,6 +24,8 @@ function InvoicesContent() {
   const [sortBy, setSortBy] = useState("created_at");
   const [sortOrder, setSortOrder] = useState("desc");
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchInvoices = useCallback(async () => {
     if (!token) return;
@@ -55,14 +59,18 @@ function InvoicesContent() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!token || !confirm("Delete this invoice?")) return;
+  const confirmDelete = async () => {
+    if (!token || !deleteId) return;
+    setDeleting(true);
     try {
-      await api.deleteInvoice(id, token);
+      await api.deleteInvoice(deleteId, token);
       toast.success("Invoice deleted");
+      setDeleteId(null);
       fetchInvoices();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -109,7 +117,7 @@ function InvoicesContent() {
       <InvoiceTable
         invoices={invoices}
         loading={loading}
-        onDelete={handleDelete}
+        onDelete={setDeleteId}
         onSort={handleSort}
         sortBy={sortBy}
         sortOrder={sortOrder}
@@ -119,13 +127,38 @@ function InvoicesContent() {
         pageSize={20}
         onPageChange={setPage}
       />
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        title="Delete this invoice?"
+        description="This permanently removes the invoice and its extracted data. This action cannot be undone."
+        confirmLabel={deleting ? "Deleting…" : "Delete invoice"}
+        destructive
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+      />
+    </div>
+  );
+}
+
+function InvoicesFallback() {
+  return (
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-9 w-40" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+      <Skeleton className="h-16 w-full rounded-lg" />
+      <Skeleton className="h-72 w-full rounded-lg" />
     </div>
   );
 }
 
 export default function InvoicesPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<InvoicesFallback />}>
       <InvoicesContent />
     </Suspense>
   );
