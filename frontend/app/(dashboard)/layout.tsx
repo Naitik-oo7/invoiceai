@@ -32,6 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <Link
                     key={href}
                     href={href}
+                    aria-current={active ? "page" : undefined}
                     className={cn(
                       "relative flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                       active
@@ -67,6 +68,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={href}
                 href={href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
                   active
